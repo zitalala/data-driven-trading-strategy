@@ -1,0 +1,8 @@
+duckdb>=1.4,<2
+pandas>=2.0,<4
+numpy>=1.26
+numba>=0.59
+pandas-ta>=0.3.14b0
+requests>=2.31
+streamlit>=1.40,<2
+altair>=5,<6

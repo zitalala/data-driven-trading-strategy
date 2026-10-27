@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Data-Driven Equity Strategy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<style>
+/* Layout: single reading column (~70ch) with wide breakout rows for stats, diagram and tables. */
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --fg: #16202b;
+  --muted: #5a6776;
+  --line: #dde2e8;
+  --accent: #1d5a82;
+  --accent-soft: #e4eef5;
+  --up: #1f7a52;
+  --down: #b2433a;
+  --code-bg: #eef1f5;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151c; --surface: #16202a; --fg: #e3e9ef; --muted: #98a6b5; --line: #273443;
+    --accent: #7fb8de; --accent-soft: #1b2e3d; --up: #5cc795; --down: #ef8a80; --code-bg: #1c2733;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151c; --surface: #16202a; --fg: #e3e9ef; --muted: #98a6b5; --line: #273443;
+  --accent: #7fb8de; --accent-soft: #1b2e3d; --up: #5cc795; --down: #ef8a80; --code-bg: #1c2733;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.65;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 4rem;
+}
+.wrap { max-width: 68rem; margin: 0 auto; }
+.col { max-width: 44rem; }
+header.hero { padding-block: 3.5rem 2rem; border-bottom: 1px solid var(--line); }
+.eyebrow { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 700; margin-block: .5rem 1rem; letter-spacing: -.01em; }
+h2 { font-size: 1.6rem; font-weight: 700; margin-block: 0 .75rem; }
+h3 { font-size: 1.1rem; font-weight: 700; margin-block: 0 .35rem; }
+p { margin: 0 0 1rem; }
+.lede { font-size: 1.2rem; color: var(--muted); max-width: 42rem; }
+.meta { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; font-size: .92rem; color: var(--muted); margin-top: 1.25rem; }
+.meta b { color: var(--fg); font-weight: 600; }
+section { padding-block: 2.75rem 0; }
+.ticker-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin-top: 2rem; }
+.ticker-strip div { background: var(--surface); padding: 1rem 1.1rem; }
+.ticker-strip .v { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 500; font-variant-numeric: tabular-nums; display: block; }
+.ticker-strip .k { font-size: .85rem; color: var(--muted); }
+.note { background: var(--accent-soft); border-radius: 6px; padding: 1rem 1.2rem; font-size: .96rem; }
+.note b { color: var(--accent); }
+code, .mono { font-family: var(--font-mono); font-size: .88em; }
+code { background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+.periods { display: flex; flex-wrap: wrap; gap: .4rem; margin-block: .5rem 1rem; }
+.periods span { font-family: var(--font-mono); font-size: .82rem; border: 1px solid var(--line); background: var(--surface); padding: .15rem .55rem; border-radius: 999px; }
+.diagram { background: #f7fafc; border: 1px solid var(--line); border-radius: 6px; padding: 1.25rem; overflow-x: auto; margin-top: 1rem; }
+ol.steps { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: .1rem; counter-reset: step; }
+ol.steps li { counter-increment: step; display: grid; grid-template-columns: 2.6rem 1fr; gap: .75rem; padding: .7rem 0; border-top: 1px solid var(--line); }
+ol.steps li::before { content: counter(step, decimal-leading-zero); font-family: var(--font-mono); color: var(--accent); font-size: .9rem; padding-top: .15rem; }
+ol.steps li div { min-width: 0; }
+ol.steps b { font-weight: 600; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 1.25rem 2rem; margin-top: 1rem; }
+.grid2 > div { min-width: 0; }
+.lesson { border-left: 2px solid var(--line); padding-left: 1rem; }
+.lesson .tag { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.table-wrap { overflow-x: auto; margin-top: 1rem; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+th, td { text-align: left; padding: .6rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
+tr:last-child td { border-bottom: 0; }
+td.mono { white-space: nowrap; }
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; margin-top: 1rem; }
+.split > div { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1rem 1.2rem; min-width: 0; }
+.split h3 { display: flex; align-items: center; gap: .5rem; }
+.dot { width: .55rem; height: .55rem; border-radius: 50%; display: inline-block; }
+.dot.up { background: var(--up); } .dot.down { background: var(--down); }
+.split ul { margin: .5rem 0 0; padding-left: 1.1rem; }
+.split li { margin-bottom: .3rem; }
+.shot { margin: 1.25rem 0 0; min-width: 0; }
+.shot img { display: block; width: 100%; height: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 6px; background: #ffffff; }
+.shot figcaption { font-size: .88rem; color: var(--muted); margin-top: .5rem; }
+.shot-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 0 1.25rem; }
+footer { margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); font-size: .9rem; color: var(--muted); }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.part { display: flex; gap: 1.25rem; align-items: baseline; margin-top: 4rem; padding: 1.4rem 1.5rem; background: var(--accent-soft); border-radius: 8px; border-left: 4px solid var(--accent); }
+.part-no { font-family: var(--font-mono); font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+.part-title { font-family: var(--font-display); font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 700; line-height: 1.1; }
+.part-sub { margin: .35rem 0 0; color: var(--muted); }
+.lesson.featured { grid-column: 1 / -1; border-left-color: var(--accent); }
+@media (max-width: 30rem) { .part { flex-direction: column; gap: .4rem; } }
+.bigpoints { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-block: 1.25rem; }
+.bigpoints > div { background: var(--surface); padding: 1.4rem 1.4rem 1.5rem; display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+.bigpoints .big { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.45rem, 2.6vw, 1.9rem); line-height: 1.1; text-wrap: balance; }
+.bigpoints .small { color: var(--muted); font-size: .98rem; }
+.bigpoints .num { font-family: var(--font-mono); color: var(--accent); font-size: .85rem; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1.25rem 2rem; margin-top: 1rem; }
+.grid3 > div { min-width: 0; }
+.grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 44rem) { .grid2 { grid-template-columns: 1fr; } }
+.lesson.takeaway { border-left-color: var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; padding: 1rem 1.2rem; align-self: start; }
+.fcf { display: grid; grid-template-columns: 3.6rem 1fr; gap: .35rem .75rem; margin: .5rem 0 0; font-size: .97rem; }
+.fcf dt { font-family: var(--font-mono); font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); padding-top: .2rem; }
+.fcf dd { margin: 0; min-width: 0; }
+.mission { margin: 1.75rem 0 0; padding: 1.6rem 1.8rem; width: 100%; background: var(--accent-soft); border-left: 5px solid var(--accent); border-radius: 0 10px 10px 0; }
+.mission-lead { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.4rem, 3vw, 1.95rem); line-height: 1.25; margin: 0 0 1rem; text-wrap: balance; }
+.mission-lead em { font-style: normal; color: var(--accent); }
+.mission ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; font-size: 1.12rem; }
+.mission li { padding-left: 1.4rem; position: relative; }
+.mission li::before { content: "→"; position: absolute; left: 0; color: var(--accent); font-weight: 600; }
+.mission b { color: var(--accent); font-weight: 700; }
+.tagline { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.25rem, 2.6vw, 1.6rem); color: var(--muted); margin: -.25rem 0 0; }
+.tagline span { color: var(--accent); font-weight: 700; }
+.arch { display: grid; gap: .4rem; margin-top: 1.25rem; }
+.arch-band { display: grid; grid-template-columns: 10.5rem 1fr; gap: 1rem; align-items: center; background: var(--accent-soft); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.1rem; }
+.arch-band.wh { border: 2px solid var(--accent); }
+.arch-name { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; line-height: 1.2; color: var(--accent); }
+.arch-boxes { display: flex; flex-wrap: wrap; gap: .7rem; align-items: stretch; min-width: 0; }
+.arch-box { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: .7rem .9rem; flex: 1 1 10rem; min-width: 0; display: flex; flex-direction: column; gap: .15rem; }
+.arch-box b { font-size: 1.02rem; color: var(--fg); font-weight: 600; }
+.arch-box span { font-size: .9rem; color: var(--muted); line-height: 1.4; }
+.arch-boxes.seq .sep { align-self: center; color: var(--accent); font-size: 1.2rem; }
+.arch-arrow { text-align: center; color: var(--muted); font-size: 1.3rem; line-height: 1; }
+@media (max-width: 44rem) { .arch-band { grid-template-columns: 1fr; gap: .6rem; } .arch-boxes.seq .sep { display: none; } }
+.flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1.6rem; margin-top: 1.25rem; counter-reset: none; }
+.flow .node { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 1.1rem 1rem 1.2rem; display: flex; flex-direction: column; gap: .3rem; min-width: 0; }
+.flow .node:not(:last-child)::after { content: "→"; position: absolute; right: -1.25rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 1.2rem; }
+.flow .node.src { background: var(--bg); border-style: dashed; }
+.flow .node.out { border-color: var(--accent); background: var(--accent-soft); }
+.flow .lbl { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.flow .ttl { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; line-height: 1.15; }
+.flow .dsc { font-size: .92rem; color: var(--muted); line-height: 1.45; }
+@media (max-width: 56rem) {
+  .flow { grid-template-columns: 1fr; gap: 1.4rem; }
+  .flow .node:not(:last-child)::after { content: "↓"; right: auto; left: 1.2rem; top: auto; bottom: -1.35rem; transform: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Independent project · Jan 2025 – present</div>
+    <h1>A data-driven trading strategy, built on my own market data warehouse</h1>
+    <p class="tagline">A personal market terminal. <span>Signals, not headlines.</span></p>
+    <blockquote class="mission">
+      <p class="mission-lead">One <em>dashboard</em> that shows what the whole market is doing, <em>without reading the news</em>.</p>
+      <ul>
+        <li>How much <b>risk</b> there is</li>
+        <li>Where money is <b>rotating</b></li>
+        <li>Which stocks are suddenly <b>drawing money</b>, or quietly <b>building momentum</b></li>
+      </ul>
+    </blockquote>
+    <div class="meta">
+      <span><b>Role</b> Sole designer and developer</span>
+      <span><b>Stack</b> Python, DuckDB (SQL), pandas, Streamlit, launchd</span>
+    </div>
+    <div class="ticker-strip" aria-label="Project scale">
+      <div><span class="v">~6,300</span><span class="k">US stocks scanned daily</span></div>
+      <div><span class="v">~700</span><span class="k">US-listed ETFs scanned daily</span></div>
+      <div><span class="v">100+</span><span class="k">themes and sub-themes, extracted from ETF names with AI</span></div>
+      <div><span class="v">6</span><span class="k">timeframes, daily to yearly</span></div>
+    </div>
+  </header>
+
+  <section>
+    <div class="col">
+      <div class="eyebrow">The question</div>
+      <h2>Where is money moving, and is it early or late?</h2>
+      <p>Retail tools show one chart at a time. I needed the whole market at once, so I built the data first.</p>
+    </div>
+    <div class="bigpoints">
+      <div><span class="big">Whole market</span><span class="small">Every US stock and ETF, every day</span></div>
+      <div><span class="big">Every timeframe</span><span class="small">Daily to yearly, all consistent</span></div>
+      <div><span class="big">Every theme</span><span class="small">Stocks mapped to the themes they trade with</span></div>
+    </div>
+    <div class="note"><b>Scope.</b> Rule definitions, thresholds and stock picks are my own research and are left out. Happy to walk through them live.</div>
+  </section>
+
+  <!-- ===================== PART 1 ===================== -->
+  <div class="part">
+    <span class="part-no">Part 1</span>
+    <div>
+      <div class="part-title">Analysis &amp; strategy</div>
+      <p class="part-sub">How the data turns into decisions: market backdrop, theme rotation, stock selection.</p>
+    </div>
+  </div>
+
+  <section>
+    <div class="col">
+      <div class="eyebrow">How the strategy reads the data</div>
+      <h2>Reading the market through data, not headlines</h2>
+      <p>Each question is answered by metrics the warehouse has already computed, so the strategy is rules applied to data.</p>
+    </div>
+    <div class="bigpoints steps3">
+      <div><span class="num">01</span><span class="big">Risk on or off?</span><span class="small">Breadth, volatility, FX and rates set the risk budget</span></div>
+      <div><span class="num">02</span><span class="big">Which themes to enter or exit?</span><span class="small">Rotate into strong themes, out of weak ones</span></div>
+      <div><span class="num">03</span><span class="big">Which stocks, and when?</span><span class="small">Stocks suddenly drawing money, or building momentum</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="col">
+      <div class="eyebrow">Analysis dashboard</div>
+      <h2>The same three views, as I use them every day</h2>
+      <p>Screenshots from my working dashboard. Rule definitions, thresholds and individual stock picks are hidden or blurred.</p>
+    </div>
+    <figure class="shot">
+      <img src="shots/dash_market.png" alt="Market risk breadth panel: overall market light red, eight-signal count of four red, four yellow and zero green, with tabs for QQQ, VOO, IWM, S5TH, S5FI, VIX, AUDUSD and US10Y" width="1600" height="562" loading="lazy">
+      <figcaption>Market backdrop: eight market signals rolled into one overall reading, with a drill-down for each series.</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="shots/dash_heatmap.png" alt="Bubble chart of weekly themes: five strong themes in green and five weak themes in red" width="1600" height="561" loading="lazy">
+      <figcaption>Theme rotation: the week's strongest and weakest themes. Bubble size shows signal strength; clicking a bubble opens its stocks.</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="shots/dash_signals.png" alt="Stock signal panel: 149 tickers meet all three signals, 35 remain after the hot-theme filter; the result table is blurred" width="1600" height="638" loading="lazy">
+      <figcaption>Stock signals: thousands of tickers narrowed to a short list, exported to TradingView. Results blurred.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="col">
+      <div class="eyebrow">Analytical problems I solved</div>
+      <h2>Making the metrics measure the right thing</h2>
+    </div>
+    <div class="grid2 analysis-grid">
+      <div class="lesson"><div class="tag">Statistics</div><h3>Neither the mean nor the median tells the truth</h3><dl class="fcf"><dt>Found</dt><dd>Theme and stock rankings swung with a handful of extreme moves.</dd><dt>Cause</dt><dd>A mean is pulled by outliers; a median ignores them, though those stocks often matter most.</dd><dt>Fix</dt><dd>Z-scores against each stock's own history and its theme peers, across timeframes. Extremes stay in, measured against normal volatility.</dd></dl></div>
+      <div class="lesson"><div class="tag">No theme data</div><h3>Stocks don't come labelled by theme</h3><dl class="fcf"><dt>Found</dt><dd>No free source maps stocks to themes like "AI infrastructure".</dd><dt>Cause</dt><dd>Themes only exist in ETF names and holdings.</dd><dt>Fix</dt><dd>Used AI to extract 100+ themes and sub-themes from ETF names, then mapped stocks through ETF holdings.</dd></dl></div>
+      <div class="lesson"><div class="tag">Theme measurement</div><h3>A theme is its stocks, not its ETF</h3><dl class="fcf"><dt>Found</dt><dd>ETF prices missed where money was moving inside a theme.</dd><dt>Cause</dt><dd>An ETF price follows one fund's fixed weights.</dd><dt>Fix</dt><dd>Measure each theme from its stocks' volume-weighted performance, then Z-score it against VOO and its own history.</dd></dl></div>
+      <div class="lesson takeaway"><div class="tag">The result</div><h3>One ranked view every morning</h3><p>Themes ranked by real trading flow, and stocks ranked by how unusual their strength is, ready before the US market opens.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== PART 2 ===================== -->
+  <div class="part">
+    <span class="part-no">Part 2</span>
+    <div>
+      <div class="part-title">Data engineering</div>
+      <p class="part-sub">The warehouse that produces every metric above, refreshed automatically each trading day.</p>
+    </div>
+  </div>
+
+  <section>
+    <div class="col">
+      <div class="eyebrow">Architecture</div>
+      <h2>Four layers, each rebuilt on its own</h2>
+      <p>Each layer can be rebuilt without touching the others, and dashboards only ever read finished tables.</p>
+    </div>
+    <div class="arch" aria-label="Architecture">
+      <div class="arch-band">
+        <div class="arch-name">Sources</div>
+        <div class="arch-boxes">
+          <div class="arch-box"><b>Alpha Vantage API</b><span>Listings, daily bars, company data, dividends, earnings, ETF profiles</span></div>
+          <div class="arch-box"><b>Cboe</b><span>VIX daily history</span></div>
+        </div>
+      </div>
+      <div class="arch-arrow" aria-hidden="true">↓</div>
+      <div class="arch-band">
+        <div class="arch-name">Ingestion</div>
+        <div class="arch-boxes">
+          <div class="arch-box"><b>Universe service</b><span>Filter active common stocks</span></div>
+          <div class="arch-box"><b>Daily downloader</b><span>Rate-limited, resumable</span></div>
+          <div class="arch-box"><b>ETF profiles and holdings</b><span>Theme screening</span></div>
+        </div>
+      </div>
+      <div class="arch-arrow" aria-hidden="true">↓</div>
+      <div class="arch-band wh">
+        <div class="arch-name">DuckDB warehouse</div>
+        <div class="arch-boxes seq">
+          <div class="arch-box"><b>Layer 1 · Data processing</b><span>Cleaning, adjustment, resampling</span></div>
+          <span class="sep" aria-hidden="true">→</span>
+          <div class="arch-box"><b>Layer 2 · Indicators</b><span>For each timeframe</span></div>
+          <span class="sep" aria-hidden="true">→</span>
+          <div class="arch-box"><b>Layer 3 · Wide tables</b><span>For each timeframe</span></div>
+          <span class="sep" aria-hidden="true">→</span>
+          <div class="arch-box"><b>Layer 4 · Reports</b><span>For the dashboards</span></div>
+        </div>
+      </div>
+      <div class="arch-arrow" aria-hidden="true">↓</div>
+      <div class="arch-band">
+        <div class="arch-name">Serving</div>
+        <div class="arch-boxes">
+          <div class="arch-box"><b>Analysis dashboard</b><span>Market, themes, stock signals</span></div>
+          <div class="arch-box"><b>Warehouse explorer</b><span>Tables, columns, lineage</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section>
+    <div class="col">
+      <div class="eyebrow">Warehouse explorer</div>
+      <h2>A tool to keep 52 tables and 840 fields manageable</h2>
+      <p>As the warehouse grew, I built a read-only Streamlit explorer to search tables, inspect their columns, trace where each table comes from, and preview sample rows without writing SQL.</p>
+    </div>
+    <figure class="shot">
+      <img src="shots/explorer_overview.png" alt="Explorer header showing 52 tables and views, 19 stock tables, 19 ETF tables and 840 columns" width="1600" height="297" loading="lazy">
+      <figcaption>Warehouse at a glance: object and column counts read live from DuckDB.</figcaption>
+    </figure>
+    <div class="shot-pair">
+      <figure class="shot">
+        <img src="shots/explorer_lineage.png" alt="Lineage view: six period tables, stocks_market and stock_real_dividend_yield feed stock_daily_snapshot" width="1600" height="971" loading="lazy">
+        <figcaption>Lineage: the daily snapshot is built from six timeframe tables plus company and dividend data.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="shots/explorer_preview.png" alt="Data preview of stock_daily_snapshot with date, symbol, name, exchange, country, sector and industry columns" width="1600" height="911" loading="lazy">
+        <figcaption>Preview: sample rows from the snapshot table, one row per ticker.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="col">
+      <div class="eyebrow">Warehouse conventions</div>
+      <h2>Tables are named by rule, not by hand</h2>
+      <p>Every table name is built from three parts: <b>asset</b>, <b>timeframe</b> and <b>layer</b>, for example <code>stock_…_1w_…</code>. Names are validated and set in one config file, so the whole schema can be renamed in one place.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="col">
+      <div class="eyebrow">Lessons from building it</div>
+      <h2>Problems I hit, and what I changed</h2>
+    </div>
+    <div class="grid2">
+      <div class="lesson"><div class="tag">Data correctness</div><h3>One stock split broke the monthly numbers</h3><dl class="fcf"><dt>Found</dt><dd>BYND looked abnormal on monthly and longer charts only.</dd><dt>Cause</dt><dd>A stock split. Bars were aggregated first and adjusted after, mixing pre- and post-split prices.</dd><dt>Fix</dt><dd>Adjust every daily bar first, then resample and recompute, for every stock and timeframe.</dd></dl></div>
+      <div class="lesson"><div class="tag">Data quality</div><h3>Hourly bars that didn't line up</h3><dl class="fcf"><dt>Found</dt><dd>The first hourly bar mixed pre-market and regular trading.</dd><dt>Cause</dt><dd>The provider's hourly bars start on the hour; the US market opens at 9:30.</dd><dt>Fix</dt><dd>Rebuilt hourly bars from 30-minute bars; trend work moved to adjusted daily data.</dd></dl></div>
+      <div class="lesson"><div class="tag">Storage</div><h3>A database that kept growing</h3><dl class="fcf"><dt>Found</dt><dd>The DuckDB file kept growing after every run.</dd><dt>Cause</dt><dd>Repeated <code>CREATE OR REPLACE</code> left dead space.</dd><dt>Fix</dt><dd>Drop-then-create, with explicit checkpoints and vacuuming.</dd></dl></div>
+      <div class="lesson"><div class="tag">Reliability</div><h3>Long downloads kept getting interrupted</h3><dl class="fcf"><dt>Found</dt><dd>Full-market downloads of over an hour often stopped halfway.</dd><dt>Cause</dt><dd>Machine sleep, network errors and API rate limits.</dd><dt>Fix</dt><dd>Per-ticker and per-step checkpoints; a rerun picks up exactly where it stopped.</dd></dl></div>
+      <div class="lesson"><div class="tag">Design</div><h3>Duplicate data across timeframes</h3><dl class="fcf"><dt>Found</dt><dd>Separate weekly and monthly downloads created duplicate tables.</dd><dt>Cause</dt><dd>Each timeframe was pulled from the API on its own.</dd><dt>Fix</dt><dd>Build every longer bar from adjusted daily bars: one source, six consistent timeframes.</dd></dl></div>
+      <div class="lesson"><div class="tag">Maintainability</div><h3>Notebooks that couldn't scale</h3><dl class="fcf"><dt>Found</dt><dd>Adding ETFs meant copying stock code.</dd><dt>Cause</dt><dd>Config, API calls and logic were repeated across scripts.</dd><dt>Fix</dt><dd>Refactored into a package with shared config, one API client and reusable services, so stocks and ETFs run on the same code.</dd></dl></div>
+    </div>
+  </section>
+
+  <footer>
+    Proprietary research rules are not published; a live walkthrough is available on request.
+  </footer>
+</div>
+
+</body>
+</html>

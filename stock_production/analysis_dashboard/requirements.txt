@@ -1,0 +1,4 @@
+duckdb>=1.4,<2
+pandas>=2.0,<4
+streamlit>=1.40,<2
+altair>=5,<6

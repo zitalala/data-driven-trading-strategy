@@ -1,0 +1,22 @@
+# Secrets
+.env
+*.env
+!.env.example
+
+# Local data and warehouse (never committed)
+data_acquisition/
+database/
+logs/
+*.duckdb
+*.duckdb.wal
+*.db
+*.csv
+!examples/*.csv
+stock_production/analysis_dashboard/data/
+
+# Python / tooling
+__pycache__/
+*.py[cod]
+.venv/
+.ipynb_checkpoints/
+.DS_Store
